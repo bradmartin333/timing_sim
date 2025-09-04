@@ -9,6 +9,7 @@ from pyray import (
     is_mouse_button_down,
     MouseButton,
     draw_rectangle,
+    draw_rectangle_lines,
     measure_text,
     draw_text,
     end_drawing,
@@ -72,6 +73,7 @@ class DraggableRectangle:
 
     def draw(self):
         draw_rectangle(self.x, self.y, self.w, self.h, self.color)
+        draw_rectangle_lines(self.x, self.y, self.w, self.h, (0, 0, 0, 50))
         text_x = self.x + 10
         text_y = self.y + 10
         text_size = 10
@@ -81,12 +83,10 @@ class DraggableRectangle:
         draw_text(self.name, text_x, text_y, text_size, WHITE)
 
 
-rectangles = [
-    DraggableRectangle("TL TIMER", 10, 10, 600, 100, RED),
-    DraggableRectangle("TL INTERVAL", 10, 110, 300, 100, GREEN),
-    DraggableRectangle("EXPOSURE", 10, 210, 120, 100, BLUE),
-    DraggableRectangle("PERIOD", 10, 310, 125, 100, PURPLE),
-]
+timer_rect = DraggableRectangle("TIMER", 10, 10, 600, 100, RED)
+interval_rect = DraggableRectangle("INTERVAL", 10, 110, 300, 100, GREEN)
+exposure_rect = DraggableRectangle("EXPOSURE", 10, 210, 120, 100, BLUE)
+period_rect = DraggableRectangle("PERIOD", 10, 310, 125, 100, PURPLE)
 
 init_window(int(window_size.x), int(window_size.y), "timing sim")
 
@@ -97,9 +97,25 @@ while not window_should_close():
     mouse_x = get_mouse_x()
     mouse_y = get_mouse_y()
 
-    for rect in rectangles:
-        rect.update(mouse_x, mouse_y)
-        rect.draw()
+    timer_rect.update(mouse_x, mouse_y)
+    timer_rect.draw()
+
+    interval_rect.max_width = timer_rect.w
+    interval_rect.update(mouse_x, mouse_y)
+    interval_rect.draw()
+    num_intervals = timer_rect.w / interval_rect.w - 1
+    for i in range(int(num_intervals)):
+        x = interval_rect.x + (i + 1) * interval_rect.w
+        draw_rectangle(
+            x - 1,
+            interval_rect.y,
+            interval_rect.w,
+            interval_rect.h,
+            interval_rect.lighter_color,
+        )
+        draw_rectangle_lines(
+            x - 1, interval_rect.y, interval_rect.w, interval_rect.h, (0, 0, 0, 50)
+        )
 
     end_drawing()
 close_window()
