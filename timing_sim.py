@@ -46,6 +46,7 @@ TEXT_PADDING = 4
 LINE_WIDTH = 1.0
 EXPOSURE_PADDING = 0.03
 EXPOSURE_DOWNSCALE = 1.0 - EXPOSURE_PADDING
+MIN_PERIOD = 50
 
 
 def draw_accurate_border(rect: Rectangle) -> None:
@@ -221,7 +222,8 @@ while not window_should_close():
     exposure_rect.max_width = interval_rect.max_width * EXPOSURE_DOWNSCALE
     exposure_rect.update(mouse)
 
-    num_exposures = max(int(interval_rect.w / padded_exposure()), 1)
+    functional_exposure = max(padded_exposure(), MIN_PERIOD)
+    num_exposures = max(int(interval_rect.w / functional_exposure), 1)
     set_window_title(
         f"{num_exposures - 1} skipped frame{"" if num_exposures == 2 else "s"}"
     )
