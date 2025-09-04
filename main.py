@@ -162,6 +162,7 @@ while not window_should_close():
     mouse_y = get_mouse_y()
 
     # Update and draw primary rectangles
+    timer_rect.min_width = interval_rect.w
     timer_rect.update(mouse_x, mouse_y)
     timer_rect.draw()
 
