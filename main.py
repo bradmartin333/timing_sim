@@ -182,22 +182,22 @@ while not window_should_close():
     # Get mouse position once per frame
     mouse = get_mouse_position()
 
-    # Update and draw primary rectangles
+    # Check if timer is decreasing past interval
     if timer_rect.w < interval_rect.w:
         interval_rect.w = timer_rect.w
         interval_rect.update(mouse)
+    # Check if interval is increasing past timer
+    if interval_rect.w > timer_rect.w:
+        timer_rect.w = interval_rect.w
     timer_rect.update(mouse)
 
     # Check for right click within interval rectangle to set width to period
     if check_collision_point_rec(
         mouse, interval_rect.get_rect()
     ) and is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_RIGHT):
-        xxx = interval_rect.w
-        interval_rect.w = exposure_rect.w * 1.03
-        print(f"{xxx}   {interval_rect.w}")
+        interval_rect.w = padded_exposure()
 
     # Update interval rectangle constraints and calculate counts
-    interval_rect.max_width = timer_rect.w
     interval_rect.update(mouse)
 
     # Update exposure rectangle constraints
@@ -212,7 +212,11 @@ while not window_should_close():
             exposure_rect.update(mouse)
         # Check if exposure is increasing past interval
         if padded_exposure() > interval_rect.w:
-            interval_rect.w = exposure_rect.w * 1.03
+            interval_rect.w = padded_exposure()
+            # Check if interval is increasing past timer
+            if interval_rect.w > timer_rect.w:
+                timer_rect.w = interval_rect.w
+                timer_rect.update(mouse)
             interval_rect.update(mouse)
 
     # Update period rectangle width based on num_exposures
