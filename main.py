@@ -175,9 +175,10 @@ set_config_flags(ConfigFlags.FLAG_MSAA_4X_HINT)
 init_window(int(WINDOW_SIZE.x), int(WINDOW_SIZE.y), "timing sim")
 
 # Main loop
+idle_time_infraction = False
 while not window_should_close():
     begin_drawing()
-    clear_background(WHITE)
+    clear_background(RED if idle_time_infraction else WHITE)
 
     # Get mouse position once per frame
     mouse = get_mouse_position()
@@ -247,6 +248,16 @@ while not window_should_close():
     interval_rect.draw()
     exposure_rect.draw()
     period_rect.draw()
+
+    # Calculate sensor idle time
+    idle_time = period_rect.w - exposure_rect.w
+    idle_fraction = idle_time / timer_rect.w
+    idle_time_infraction = (
+        idle_fraction > 0.25
+    )  # This would be some actual number of us
+    timer_rect.name = (
+        "***SENSOR IDLE TIME INFRACTION***" if idle_time_infraction else "TIMER"
+    )
 
     end_drawing()
 
