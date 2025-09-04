@@ -5,6 +5,7 @@ from pyray import (
     init_window,
     window_should_close,
     set_config_flags,
+    set_window_title,
     ConfigFlags,
     begin_drawing,
     clear_background,
@@ -214,6 +215,9 @@ while not window_should_close():
     exposure_rect.update(mouse)
 
     num_exposures = max(int(interval_rect.w / padded_exposure()), 1)
+    set_window_title(
+        f"{num_exposures - 1} skipped frame{"" if num_exposures == 2 else "s"}"
+    )
     if num_exposures == 1:
         # Check if interval is decreasing past exposure
         if interval_rect.w < padded_exposure():
