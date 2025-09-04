@@ -157,7 +157,6 @@ while not window_should_close():
     # Update and draw primary rectangles
     timer_rect.min_width = interval_rect.w
     timer_rect.update(mouse_x, mouse_y)
-    timer_rect.draw()
 
     # Check for right click within interval rectangle to set width to period
     padded_exposure = exposure_rect.w * 1.03
@@ -170,20 +169,18 @@ while not window_should_close():
     # Update interval rectangle constraints and calculate counts
     interval_rect.max_width = timer_rect.w
     interval_rect.update(mouse_x, mouse_y)
-    interval_rect.draw()
+
     num_intervals = int(timer_rect.w / interval_rect.w)
 
     # Update exposure rectangle constraints
     exposure_rect.max_width = int(interval_rect.w * 0.97)
     exposure_rect.update(mouse_x, mouse_y)
-    exposure_rect.draw()
 
     num_exposures = max(int(interval_rect.w / padded_exposure), 1)
 
     # Update period rectangle width based on num_exposures
     period_rect.w = int(interval_rect.w / num_exposures)
     period_rect.update(mouse_x, mouse_y)
-    period_rect.draw()
 
     # Update interval minimum width constraint
     interval_rect.min_width = (
@@ -205,6 +202,12 @@ while not window_should_close():
             x = interval_rect.x + period_rect.w * j + i * interval_rect.w
             draw_repeated_rectangle(period_rect, x)
             draw_repeated_rectangle(exposure_rect, x)
+
+    # Draw core rectangles
+    timer_rect.draw()
+    interval_rect.draw()
+    exposure_rect.draw()
+    period_rect.draw()
 
     end_drawing()
 
