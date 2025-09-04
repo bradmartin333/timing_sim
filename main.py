@@ -20,13 +20,16 @@ from pyray import (
     GREEN,
     BLUE,
     PURPLE,
+    GRAY,
 )
 
 window_size = Vector2(800, 420)
 
 
 class DraggableRectangle:
-    def __init__(self, name, x, y, w, h, color=BLUE, min_width=100, max_width=780):
+    def __init__(
+        self, name, x, y, w, h, color=BLUE, min_width=100, max_width=780, editable=True
+    ):
         self.name = name
         self.x = x
         self.y = y
@@ -34,9 +37,10 @@ class DraggableRectangle:
         self.h = h
         self.color = color
         self.dragging = False
-        self.edge_threshold = 10
+        self.edge_threshold = 5
         self.min_width = min_width
         self.max_width = max_width
+        self.editable = editable
         self.lighter_color = (
             min(color[0] + 40, 255),  # pyright: ignore[reportIndexIssue]
             min(color[1] + 40, 255),  # pyright: ignore[reportIndexIssue]
@@ -45,6 +49,8 @@ class DraggableRectangle:
         )
 
     def on_right_edge(self, mouse_x, mouse_y):
+        if not self.editable:
+            return False
         return (
             self.x + self.w - self.edge_threshold
             <= mouse_x
@@ -59,7 +65,7 @@ class DraggableRectangle:
                 self.y,
                 self.edge_threshold * 2,
                 self.h,
-                self.lighter_color,
+                GRAY,
             )
             if is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_LEFT):
                 self.dragging = True
@@ -83,10 +89,12 @@ class DraggableRectangle:
         draw_text(self.name, text_x, text_y, text_size, WHITE)
 
 
-timer_rect = DraggableRectangle("TIMER", 10, 10, 600, 100, RED)
+timer_rect = DraggableRectangle("TIMER", 10, 10, 780, 100, RED)
 interval_rect = DraggableRectangle("INTERVAL", 10, 110, 300, 100, GREEN)
-exposure_rect = DraggableRectangle("EXPOSURE", 10, 210, 120, 100, BLUE)
-period_rect = DraggableRectangle("PERIOD", 10, 310, 125, 100, PURPLE)
+exposure_rect = DraggableRectangle("EXPOSURE", 10, 210, 120, 100, BLUE, min_width=20)
+period_rect = DraggableRectangle(
+    "PERIOD", 10, 310, int(120 * 1.03), 100, PURPLE, editable=False
+)
 
 init_window(int(window_size.x), int(window_size.y), "timing sim")
 
@@ -103,18 +111,51 @@ while not window_should_close():
     interval_rect.max_width = timer_rect.w
     interval_rect.update(mouse_x, mouse_y)
     interval_rect.draw()
-    num_intervals = timer_rect.w / interval_rect.w - 1
-    for i in range(int(num_intervals)):
-        x = interval_rect.x + (i + 1) * interval_rect.w
+    num_intervals = int(timer_rect.w / interval_rect.w)
+    for i in range(1, num_intervals):
+        x = interval_rect.x + i * interval_rect.w
         draw_rectangle(
-            x - 1,
+            x,
             interval_rect.y,
             interval_rect.w,
             interval_rect.h,
             interval_rect.lighter_color,
         )
         draw_rectangle_lines(
-            x - 1, interval_rect.y, interval_rect.w, interval_rect.h, (0, 0, 0, 50)
+            x, interval_rect.y, interval_rect.w, interval_rect.h, (0, 0, 0, 50)
+        )
+
+    exposure_rect.max_width = int(interval_rect.w * 0.97)
+    exposure_rect.update(mouse_x, mouse_y)
+    exposure_rect.draw()
+    padded_exposure = exposure_rect.w * 1.03
+    num_exposures = int(interval_rect.w / padded_exposure)
+
+    period_rect.w = int(float(interval_rect.w) / num_exposures)
+    period_rect.update(mouse_x, mouse_y)
+    period_rect.draw()
+
+    for i in range(1, num_exposures):
+        x = interval_rect.x + i * period_rect.w
+        draw_rectangle(
+            x,
+            period_rect.y,
+            period_rect.w,
+            period_rect.h,
+            period_rect.lighter_color,
+        )
+        draw_rectangle_lines(
+            x, period_rect.y, period_rect.w, period_rect.h, (0, 0, 0, 50)
+        )
+        draw_rectangle(
+            x - 1,
+            exposure_rect.y,
+            exposure_rect.w,
+            exposure_rect.h,
+            exposure_rect.lighter_color,
+        )
+        draw_rectangle_lines(
+            x - 1, exposure_rect.y, exposure_rect.w, exposure_rect.h, (0, 0, 0, 50)
         )
 
     end_drawing()
