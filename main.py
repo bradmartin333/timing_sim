@@ -36,6 +36,8 @@ EDGE_THRESHOLD = 10
 TEXT_SIZE = 10
 TEXT_PADDING = 4
 LINE_WIDTH = 1.0
+EXPOSURE_PADDING = 0.3
+EXPOSURE_DOWNSCALE = 1.0 - EXPOSURE_PADDING
 
 
 def draw_accurate_border(rect: Rectangle) -> None:
@@ -152,7 +154,13 @@ class DraggableRectangle:
 timer_rect = DraggableRectangle("TIMER", 10.0, 10.0, 780.0, 100.0, RED)
 interval_rect = DraggableRectangle("INTERVAL", 10.0, 110.0, 300.0, 100.0, GREEN)
 exposure_rect = DraggableRectangle(
-    "EXPOSURE", 10.0, 210.0, (120.0 * 0.97), 100.0, BLUE, min_width=(20.0 * 0.97)
+    "EXPOSURE",
+    10.0,
+    210.0,
+    (120.0 * EXPOSURE_DOWNSCALE),
+    100.0,
+    BLUE,
+    min_width=(20.0 * EXPOSURE_DOWNSCALE),
 )
 period_rect = DraggableRectangle(
     "PERIOD", 10.0, 330.0, 120.0, 100.0, PURPLE, editable=False
@@ -167,7 +175,7 @@ def draw_repeated_rectangle(rect: DraggableRectangle, x: float) -> None:
 
 
 def padded_exposure() -> float:
-    return exposure_rect.w * 1.03
+    return exposure_rect.w * (1.0 + EXPOSURE_PADDING)
 
 
 # Initialize window
@@ -202,14 +210,14 @@ while not window_should_close():
     interval_rect.update(mouse)
 
     # Update exposure rectangle constraints
-    exposure_rect.max_width = interval_rect.max_width * 0.97
+    exposure_rect.max_width = interval_rect.max_width * EXPOSURE_DOWNSCALE
     exposure_rect.update(mouse)
 
     num_exposures = max(int(interval_rect.w / padded_exposure()), 1)
     if num_exposures == 1:
         # Check if interval is decreasing past exposure
         if interval_rect.w < padded_exposure():
-            exposure_rect.w = interval_rect.w * 0.97
+            exposure_rect.w = interval_rect.w * EXPOSURE_DOWNSCALE
             exposure_rect.update(mouse)
         # Check if exposure is increasing past interval
         if padded_exposure() > interval_rect.w:
@@ -254,7 +262,7 @@ while not window_should_close():
     idle_fraction = idle_time / timer_rect.w
     idle_time_infraction = (
         idle_fraction > 0.25
-    )  # This would be some actual number of us
+    )  # This would be some actual number of µs
     timer_rect.name = (
         "***SENSOR IDLE TIME INFRACTION***" if idle_time_infraction else "TIMER"
     )
