@@ -112,18 +112,6 @@ while not window_should_close():
     interval_rect.update(mouse_x, mouse_y)
     interval_rect.draw()
     num_intervals = int(timer_rect.w / interval_rect.w)
-    for i in range(1, num_intervals):
-        x = interval_rect.x + i * interval_rect.w
-        draw_rectangle(
-            x,
-            interval_rect.y,
-            interval_rect.w,
-            interval_rect.h,
-            interval_rect.lighter_color,
-        )
-        draw_rectangle_lines(
-            x, interval_rect.y, interval_rect.w, interval_rect.h, (0, 0, 0, 50)
-        )
 
     exposure_rect.max_width = int(interval_rect.w * 0.97)
     exposure_rect.update(mouse_x, mouse_y)
@@ -135,28 +123,48 @@ while not window_should_close():
     period_rect.update(mouse_x, mouse_y)
     period_rect.draw()
 
-    for i in range(1, num_exposures):
-        x = interval_rect.x + i * period_rect.w
-        draw_rectangle(
-            x,
-            period_rect.y,
-            period_rect.w,
-            period_rect.h,
-            period_rect.lighter_color,
-        )
-        draw_rectangle_lines(
-            x, period_rect.y, period_rect.w, period_rect.h, (0, 0, 0, 50)
-        )
-        draw_rectangle(
-            x - 1,
-            exposure_rect.y,
-            exposure_rect.w,
-            exposure_rect.h,
-            exposure_rect.lighter_color,
-        )
-        draw_rectangle_lines(
-            x - 1, exposure_rect.y, exposure_rect.w, exposure_rect.h, (0, 0, 0, 50)
-        )
+    interval_rect.min_width = period_rect.w
+
+    for i in range(num_intervals):
+        x = interval_rect.x + i * interval_rect.w
+
+        if i > 0:
+            draw_rectangle(
+                x,
+                interval_rect.y,
+                interval_rect.w,
+                interval_rect.h,
+                interval_rect.lighter_color,
+            )
+            draw_rectangle_lines(
+                x, interval_rect.y, interval_rect.w, interval_rect.h, (0, 0, 0, 50)
+            )
+
+        for j in range(num_exposures):
+            if i == 0 and j == 0:
+                continue
+
+            x = interval_rect.x + period_rect.w * j + i * interval_rect.w
+            draw_rectangle(
+                x,
+                period_rect.y,
+                period_rect.w,
+                period_rect.h,
+                period_rect.lighter_color,
+            )
+            draw_rectangle_lines(
+                x, period_rect.y, period_rect.w, period_rect.h, (0, 0, 0, 50)
+            )
+            draw_rectangle(
+                x,
+                exposure_rect.y,
+                exposure_rect.w,
+                exposure_rect.h,
+                exposure_rect.lighter_color,
+            )
+            draw_rectangle_lines(
+                x, exposure_rect.y, exposure_rect.w, exposure_rect.h, (0, 0, 0, 50)
+            )
 
     end_drawing()
 close_window()
