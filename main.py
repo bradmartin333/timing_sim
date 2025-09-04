@@ -8,8 +8,7 @@ from pyray import (
     ConfigFlags,
     begin_drawing,
     clear_background,
-    get_mouse_x,
-    get_mouse_y,
+    get_mouse_position,
     is_mouse_button_pressed,
     is_mouse_button_down,
     MouseButton,
@@ -62,7 +61,7 @@ class DraggableRectangle:
     w: float
     h: float
     color: Any = BLUE
-    min_width: float = 100.0
+    min_width: float = 20.0
     max_width: float = 780.0
     editable: bool = True
     dragging: bool = False
@@ -87,20 +86,23 @@ class DraggableRectangle:
         )
         self.lighter_color = (min(r + 40, 255), min(g + 40, 255), min(b + 40, 255), 120)
 
-    def on_right_edge(self, mouse_x: int, mouse_y: int) -> bool:
+    def get_rect(self) -> Rectangle:
+        return Rectangle(self.x, self.y, self.w, self.h)
+
+    def on_right_edge(self, mouse: Vector2) -> bool:
         """Check if mouse is on the right edge of rectangle."""
         if not self.editable:
             return False
         return (
             self.x + self.w - EDGE_THRESHOLD
-            <= mouse_x
+            <= mouse.x
             <= self.x + self.w + EDGE_THRESHOLD
-            and self.y <= mouse_y <= self.y + self.h
+            and self.y <= mouse.y <= self.y + self.h
         )
 
-    def update(self, mouse_x: int, mouse_y: int) -> None:
+    def update(self, mouse: Vector2) -> None:
         """Update rectangle width based on mouse interaction."""
-        if self.on_right_edge(mouse_x, mouse_y):
+        if self.on_right_edge(mouse):
             self.hover = True
             if is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_LEFT):
                 self.dragging = True
@@ -109,7 +111,7 @@ class DraggableRectangle:
 
         if self.dragging:
             if is_mouse_button_down(MouseButton.MOUSE_BUTTON_LEFT):
-                new_width = mouse_x - self.x
+                new_width = mouse.x - self.x
                 self.w = max(self.min_width, min(new_width, self.max_width))
             else:
                 self.dragging = False
@@ -117,7 +119,7 @@ class DraggableRectangle:
     def draw(self) -> None:
         """Draw the rectangle with its label."""
         # Draw main rectangle
-        r = Rectangle(self.x, self.y, self.w, self.h)
+        r = self.get_rect()
         draw_rectangle_rec(r, self.color)
         draw_accurate_border(r)
 
@@ -146,6 +148,17 @@ class DraggableRectangle:
         draw_text(self.name, int(text_x), int(text_y), TEXT_SIZE, WHITE)
 
 
+# Initialize rectangles
+timer_rect = DraggableRectangle("TIMER", 10.0, 10.0, 780.0, 100.0, RED)
+interval_rect = DraggableRectangle("INTERVAL", 10.0, 110.0, 300.0, 100.0, GREEN)
+exposure_rect = DraggableRectangle(
+    "EXPOSURE", 10.0, 210.0, (120.0 * 0.97), 100.0, BLUE, min_width=(20.0 * 0.97)
+)
+period_rect = DraggableRectangle(
+    "PERIOD", 10.0, 330.0, 120.0, 100.0, PURPLE, editable=False
+)
+
+
 def draw_repeated_rectangle(rect: DraggableRectangle, x: float) -> None:
     """Draw a rectangle at the specified x position with border."""
     r = Rectangle(x, rect.y, rect.w, rect.h)
@@ -153,17 +166,9 @@ def draw_repeated_rectangle(rect: DraggableRectangle, x: float) -> None:
     draw_accurate_border(r)
 
 
-# Initialize rectangles
-timer_rect = DraggableRectangle("TIMER", 10.0, 10.0, 780.0, 100.0, RED)
-interval_rect = DraggableRectangle(
-    "INTERVAL", 10.0, 110.0, 300.0, 100.0, GREEN, min_width=(20.0 * 1.03)
-)
-exposure_rect = DraggableRectangle(
-    "EXPOSURE", 10.0, 210.0, 120.0, 100.0, BLUE, min_width=20.0
-)
-period_rect = DraggableRectangle(
-    "PERIOD", 10.0, 330.0, (120.0 * 1.03), 100.0, PURPLE, editable=False
-)
+def padded_exposure() -> float:
+    return exposure_rect.w * 1.03
+
 
 # Initialize window
 set_config_flags(ConfigFlags.FLAG_MSAA_4X_HINT)
@@ -175,45 +180,46 @@ while not window_should_close():
     clear_background(WHITE)
 
     # Get mouse position once per frame
-    mouse_x = get_mouse_x()
-    mouse_y = get_mouse_y()
+    mouse = get_mouse_position()
 
     # Update and draw primary rectangles
-    timer_rect.min_width = interval_rect.w
-    timer_rect.update(mouse_x, mouse_y)
+    if timer_rect.w < interval_rect.w:
+        interval_rect.w = timer_rect.w
+        interval_rect.update(mouse)
+    timer_rect.update(mouse)
 
     # Check for right click within interval rectangle to set width to period
-    padded_exposure = exposure_rect.w * 1.03
     if check_collision_point_rec(
-        (mouse_x, mouse_y),
-        (interval_rect.x, interval_rect.y, interval_rect.w, interval_rect.h),
+        mouse, interval_rect.get_rect()
     ) and is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_RIGHT):
-        interval_rect.w = padded_exposure
+        xxx = interval_rect.w
+        interval_rect.w = exposure_rect.w * 1.03
+        print(f"{xxx}   {interval_rect.w}")
 
     # Update interval rectangle constraints and calculate counts
     interval_rect.max_width = timer_rect.w
-    interval_rect.update(mouse_x, mouse_y)
+    interval_rect.update(mouse)
 
     # Update exposure rectangle constraints
     exposure_rect.max_width = interval_rect.max_width * 0.97
-    exposure_rect.update(mouse_x, mouse_y)
+    exposure_rect.update(mouse)
 
-    num_exposures = max(int(interval_rect.w / padded_exposure), 1)
+    num_exposures = max(int(interval_rect.w / padded_exposure()), 1)
     if num_exposures == 1:
         # Check if interval is decreasing past exposure
-        if interval_rect.w < padded_exposure:
+        if interval_rect.w < padded_exposure():
             exposure_rect.w = interval_rect.w * 0.97
-            exposure_rect.update(mouse_x, mouse_y)
+            exposure_rect.update(mouse)
         # Check if exposure is increasing past interval
-        if padded_exposure > interval_rect.w:
-            interval_rect.w = padded_exposure
-            interval_rect.update(mouse_x, mouse_y)
+        if padded_exposure() > interval_rect.w:
+            interval_rect.w = exposure_rect.w * 1.03
+            interval_rect.update(mouse)
 
     # Update period rectangle width based on num_exposures
     period_rect.w = interval_rect.w / num_exposures
     total_period = period_rect.w * num_exposures
     period_gap = interval_rect.w - total_period
-    period_rect.update(mouse_x, mouse_y)
+    period_rect.update(mouse)
 
     # Draw repeated intervals and exposures
     num_intervals = int(timer_rect.w / interval_rect.w)
