@@ -4,6 +4,8 @@ from typing import Any
 from pyray import (
     init_window,
     window_should_close,
+    set_config_flags,
+    ConfigFlags,
     begin_drawing,
     clear_background,
     get_mouse_x,
@@ -25,17 +27,14 @@ from pyray import (
     BLUE,
     PURPLE,
     GRAY,
+    BLACK,
 )
 
 # Constants
-WINDOW_SIZE = Vector2(800, 420)
+WINDOW_SIZE = Vector2(800, 440)
 EDGE_THRESHOLD = 5
 TEXT_SIZE = 10
 TEXT_PADDING = 4
-ALPHA_LIGHT = 120
-ALPHA_BORDER = 50
-ALPHA_TEXT_BG = 200
-COLOR_BLACK = (0, 0, 0)
 
 
 @dataclass
@@ -69,12 +68,7 @@ class DraggableRectangle:
             if hasattr(self.color, "b") or isinstance(self.color, tuple)
             else 0
         )
-        self.lighter_color = (
-            min(r + 40, 255),
-            min(g + 40, 255),
-            min(b + 40, 255),
-            ALPHA_LIGHT,
-        )
+        self.lighter_color = (min(r + 40, 255), min(g + 40, 255), min(b + 40, 255), 120)
 
     def on_right_edge(self, mouse_x: int, mouse_y: int) -> bool:
         """Check if mouse is on the right edge of rectangle."""
@@ -112,9 +106,7 @@ class DraggableRectangle:
         """Draw the rectangle with its label."""
         # Draw main rectangle
         draw_rectangle(self.x, self.y, self.w, self.h, self.color)
-        draw_rectangle_lines(
-            self.x, self.y, self.w, self.h, (*COLOR_BLACK, ALPHA_BORDER)
-        )
+        draw_rectangle_lines(self.x, self.y, self.w, self.h, BLACK)
 
         # Draw label
         text_x = self.x + 10
@@ -128,7 +120,7 @@ class DraggableRectangle:
             text_y - 2,
             text_width,
             text_height,
-            (*COLOR_BLACK, ALPHA_TEXT_BG),
+            BLACK,
         )
 
         # Draw label text
@@ -138,7 +130,7 @@ class DraggableRectangle:
 def draw_repeated_rectangle(rect: DraggableRectangle, x: int) -> None:
     """Draw a rectangle at the specified x position with border."""
     draw_rectangle(x, rect.y, rect.w, rect.h, rect.lighter_color)
-    draw_rectangle_lines(x, rect.y, rect.w, rect.h, (*COLOR_BLACK, ALPHA_BORDER))
+    draw_rectangle_lines(x, rect.y, rect.w, rect.h, BLACK)
 
 
 # Initialize rectangles
@@ -146,10 +138,11 @@ timer_rect = DraggableRectangle("TIMER", 10, 10, 780, 100, RED)
 interval_rect = DraggableRectangle("INTERVAL", 10, 110, 300, 100, GREEN)
 exposure_rect = DraggableRectangle("EXPOSURE", 10, 210, 120, 100, BLUE, min_width=20)
 period_rect = DraggableRectangle(
-    "PERIOD", 10, 310, int(120 * 1.03), 100, PURPLE, editable=False
+    "PERIOD", 10, 330, int(120 * 1.03), 100, PURPLE, editable=False
 )
 
 # Initialize window
+set_config_flags(ConfigFlags.FLAG_MSAA_4X_HINT)
 init_window(int(WINDOW_SIZE.x), int(WINDOW_SIZE.y), "timing sim")
 
 # Main loop
