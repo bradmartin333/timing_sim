@@ -13,14 +13,15 @@ from pyray import (
     is_mouse_button_pressed,
     is_mouse_button_down,
     MouseButton,
-    draw_rectangle,
-    draw_rectangle_lines,
+    draw_rectangle_rec,
+    draw_line_v,
     measure_text,
     draw_text,
     end_drawing,
     close_window,
     check_collision_point_rec,
     Vector2,
+    Rectangle,
     WHITE,
     RED,
     GREEN,
@@ -32,21 +33,37 @@ from pyray import (
 
 # Constants
 WINDOW_SIZE = Vector2(800, 440)
-EDGE_THRESHOLD = 5
+EDGE_THRESHOLD = 10
 TEXT_SIZE = 10
 TEXT_PADDING = 4
+LINE_WIDTH = 1.0
+
+
+def draw_accurate_border(rect: Rectangle) -> None:
+    draw_line_v(Vector2(rect.x, rect.y), Vector2(rect.x, rect.y + rect.height), BLACK)
+    draw_line_v(
+        Vector2(rect.x + rect.width, rect.y),
+        Vector2(rect.x + rect.width, rect.y + rect.height),
+        BLACK,
+    )
+    draw_line_v(Vector2(rect.x, rect.y), Vector2(rect.x + rect.width, rect.y), BLACK)
+    draw_line_v(
+        Vector2(rect.x, rect.y + rect.height),
+        Vector2(rect.x + rect.width, rect.y + rect.height),
+        BLACK,
+    )
 
 
 @dataclass
 class DraggableRectangle:
     name: str
-    x: int
-    y: int
-    w: int
-    h: int
+    x: float
+    y: float
+    w: float
+    h: float
     color: Any = BLUE
-    min_width: int = 100
-    max_width: int = 780
+    min_width: float = 100.0
+    max_width: float = 780.0
     editable: bool = True
     dragging: bool = False
 
@@ -84,16 +101,11 @@ class DraggableRectangle:
     def update(self, mouse_x: int, mouse_y: int) -> None:
         """Update rectangle width based on mouse interaction."""
         if self.on_right_edge(mouse_x, mouse_y):
-            # Draw resize handle
-            draw_rectangle(
-                self.x + self.w - EDGE_THRESHOLD,
-                self.y,
-                EDGE_THRESHOLD * 2,
-                self.h,
-                GRAY,
-            )
+            self.hover = True
             if is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_LEFT):
                 self.dragging = True
+        else:
+            self.hover = False
 
         if self.dragging:
             if is_mouse_button_down(MouseButton.MOUSE_BUTTON_LEFT):
@@ -105,8 +117,9 @@ class DraggableRectangle:
     def draw(self) -> None:
         """Draw the rectangle with its label."""
         # Draw main rectangle
-        draw_rectangle(self.x, self.y, self.w, self.h, self.color)
-        draw_rectangle_lines(self.x, self.y, self.w, self.h, BLACK)
+        r = Rectangle(self.x, self.y, self.w, self.h)
+        draw_rectangle_rec(r, self.color)
+        draw_accurate_border(r)
 
         # Draw label
         text_x = self.x + 10
@@ -114,33 +127,42 @@ class DraggableRectangle:
         text_width = measure_text(self.name, TEXT_SIZE) + 8
         text_height = TEXT_SIZE + 6
 
+        # Draw resize handle
+        if self.hover or self.dragging:
+            draw_rectangle_rec(
+                Rectangle(
+                    self.x + self.w - EDGE_THRESHOLD, self.y, EDGE_THRESHOLD, self.h
+                ),
+                GRAY,
+            )
+
         # Draw label background
-        draw_rectangle(
-            text_x - TEXT_PADDING,
-            text_y - 2,
-            text_width,
-            text_height,
+        draw_rectangle_rec(
+            Rectangle(text_x - TEXT_PADDING, text_y - 2, text_width, text_height),
             BLACK,
         )
 
         # Draw label text
-        draw_text(self.name, text_x, text_y, TEXT_SIZE, WHITE)
+        draw_text(self.name, int(text_x), int(text_y), TEXT_SIZE, WHITE)
 
 
-def draw_repeated_rectangle(rect: DraggableRectangle, x: int) -> None:
+def draw_repeated_rectangle(rect: DraggableRectangle, x: float) -> None:
     """Draw a rectangle at the specified x position with border."""
-    draw_rectangle(x, rect.y, rect.w, rect.h, rect.lighter_color)
-    draw_rectangle_lines(x, rect.y, rect.w, rect.h, BLACK)
+    r = Rectangle(x, rect.y, rect.w, rect.h)
+    draw_rectangle_rec(r, rect.lighter_color)
+    draw_accurate_border(r)
 
 
 # Initialize rectangles
-timer_rect = DraggableRectangle("TIMER", 10, 10, 780, 100, RED)
+timer_rect = DraggableRectangle("TIMER", 10.0, 10.0, 780.0, 100.0, RED)
 interval_rect = DraggableRectangle(
-    "INTERVAL", 10, 110, 300, 100, GREEN, min_width=int(20 * 1.03)
+    "INTERVAL", 10.0, 110.0, 300.0, 100.0, GREEN, min_width=(20.0 * 1.03)
 )
-exposure_rect = DraggableRectangle("EXPOSURE", 10, 210, 120, 100, BLUE, min_width=20)
+exposure_rect = DraggableRectangle(
+    "EXPOSURE", 10.0, 210.0, 120.0, 100.0, BLUE, min_width=20.0
+)
 period_rect = DraggableRectangle(
-    "PERIOD", 10, 330, int(120 * 1.03), 100, PURPLE, editable=False
+    "PERIOD", 10.0, 330.0, (120.0 * 1.03), 100.0, PURPLE, editable=False
 )
 
 # Initialize window
@@ -166,29 +188,31 @@ while not window_should_close():
         (mouse_x, mouse_y),
         (interval_rect.x, interval_rect.y, interval_rect.w, interval_rect.h),
     ) and is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_RIGHT):
-        interval_rect.w = int(padded_exposure)
+        interval_rect.w = padded_exposure
 
     # Update interval rectangle constraints and calculate counts
     interval_rect.max_width = timer_rect.w
     interval_rect.update(mouse_x, mouse_y)
 
     # Update exposure rectangle constraints
-    exposure_rect.max_width = int(interval_rect.max_width * 0.97)
+    exposure_rect.max_width = interval_rect.max_width * 0.97
     exposure_rect.update(mouse_x, mouse_y)
 
     num_exposures = max(int(interval_rect.w / padded_exposure), 1)
     if num_exposures == 1:
         # Check if interval is decreasing past exposure
         if interval_rect.w < padded_exposure:
-            exposure_rect.w = int(interval_rect.w * 0.97)
+            exposure_rect.w = interval_rect.w * 0.97
             exposure_rect.update(mouse_x, mouse_y)
         # Check if exposure is increasing past interval
         if padded_exposure > interval_rect.w:
-            interval_rect.w = int(padded_exposure)
+            interval_rect.w = padded_exposure
             interval_rect.update(mouse_x, mouse_y)
 
     # Update period rectangle width based on num_exposures
-    period_rect.w = int(interval_rect.w / num_exposures)
+    period_rect.w = interval_rect.w / num_exposures
+    total_period = period_rect.w * num_exposures
+    period_gap = interval_rect.w - total_period
     period_rect.update(mouse_x, mouse_y)
 
     # Draw repeated intervals and exposures
