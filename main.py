@@ -135,7 +135,9 @@ def draw_repeated_rectangle(rect: DraggableRectangle, x: int) -> None:
 
 # Initialize rectangles
 timer_rect = DraggableRectangle("TIMER", 10, 10, 780, 100, RED)
-interval_rect = DraggableRectangle("INTERVAL", 10, 110, 300, 100, GREEN)
+interval_rect = DraggableRectangle(
+    "INTERVAL", 10, 110, 300, 100, GREEN, min_width=int(20 * 1.03)
+)
 exposure_rect = DraggableRectangle("EXPOSURE", 10, 210, 120, 100, BLUE, min_width=20)
 period_rect = DraggableRectangle(
     "PERIOD", 10, 330, int(120 * 1.03), 100, PURPLE, editable=False
@@ -170,24 +172,27 @@ while not window_should_close():
     interval_rect.max_width = timer_rect.w
     interval_rect.update(mouse_x, mouse_y)
 
-    num_intervals = int(timer_rect.w / interval_rect.w)
-
     # Update exposure rectangle constraints
-    exposure_rect.max_width = int(interval_rect.w * 0.97)
+    exposure_rect.max_width = int(interval_rect.max_width * 0.97)
     exposure_rect.update(mouse_x, mouse_y)
 
     num_exposures = max(int(interval_rect.w / padded_exposure), 1)
+    if num_exposures == 1:
+        # Check if interval is decreasing past exposure
+        if interval_rect.w < padded_exposure:
+            exposure_rect.w = int(interval_rect.w * 0.97)
+            exposure_rect.update(mouse_x, mouse_y)
+        # Check if exposure is increasing past interval
+        if padded_exposure > interval_rect.w:
+            interval_rect.w = int(padded_exposure)
+            interval_rect.update(mouse_x, mouse_y)
 
     # Update period rectangle width based on num_exposures
     period_rect.w = int(interval_rect.w / num_exposures)
     period_rect.update(mouse_x, mouse_y)
 
-    # Update interval minimum width constraint
-    interval_rect.min_width = (
-        period_rect.w if num_exposures > 1 else int(padded_exposure)
-    )
-
     # Draw repeated intervals and exposures
+    num_intervals = int(timer_rect.w / interval_rect.w)
     for i in range(num_intervals):
         # Skip the first interval as it's already drawn
         if i > 0:
