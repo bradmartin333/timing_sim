@@ -2,4 +2,4 @@
 
 slide rectangles to see how they update the timing structure
 
-https://github.com/user-attachments/assets/8dd9b077-81f7-4031-9a0b-e5faedbb7841
+https://github.com/user-attachments/assets/1eb85144-3811-4554-b62d-fc55fb3b1431
