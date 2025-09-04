@@ -117,13 +117,15 @@ while not window_should_close():
     exposure_rect.update(mouse_x, mouse_y)
     exposure_rect.draw()
     padded_exposure = exposure_rect.w * 1.03
-    num_exposures = int(interval_rect.w / padded_exposure)
+    num_exposures = max(int(interval_rect.w / padded_exposure), 1)
 
     period_rect.w = int(float(interval_rect.w) / num_exposures)
     period_rect.update(mouse_x, mouse_y)
     period_rect.draw()
 
-    interval_rect.min_width = period_rect.w
+    interval_rect.min_width = (
+        period_rect.w if num_exposures > 1 else int(padded_exposure)
+    )
 
     for i in range(num_intervals):
         x = interval_rect.x + i * interval_rect.w
