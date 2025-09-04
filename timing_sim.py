@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "raylib>=5.5.0.3",
+# ]
+# ///
+
 from dataclasses import dataclass
 from typing import Any
 
