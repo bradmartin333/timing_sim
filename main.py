@@ -17,6 +17,7 @@ from pyray import (
     draw_text,
     end_drawing,
     close_window,
+    check_collision_point_rec,
     Vector2,
     WHITE,
     RED,
@@ -163,6 +164,13 @@ while not window_should_close():
     # Update and draw primary rectangles
     timer_rect.update(mouse_x, mouse_y)
     timer_rect.draw()
+
+    # Check for right click within interval rectangle to set width to period
+    if check_collision_point_rec(
+        (mouse_x, mouse_y),
+        (interval_rect.x, interval_rect.y, interval_rect.w, interval_rect.h),
+    ) and is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_RIGHT):
+        interval_rect.w = period_rect.w
 
     # Update interval rectangle constraints and calculate counts
     interval_rect.max_width = timer_rect.w
