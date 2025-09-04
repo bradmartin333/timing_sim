@@ -166,11 +166,12 @@ while not window_should_close():
     timer_rect.draw()
 
     # Check for right click within interval rectangle to set width to period
+    padded_exposure = exposure_rect.w * 1.03
     if check_collision_point_rec(
         (mouse_x, mouse_y),
         (interval_rect.x, interval_rect.y, interval_rect.w, interval_rect.h),
     ) and is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_RIGHT):
-        interval_rect.w = period_rect.w
+        interval_rect.w = int(padded_exposure)
 
     # Update interval rectangle constraints and calculate counts
     interval_rect.max_width = timer_rect.w
@@ -182,7 +183,7 @@ while not window_should_close():
     exposure_rect.max_width = int(interval_rect.w * 0.97)
     exposure_rect.update(mouse_x, mouse_y)
     exposure_rect.draw()
-    padded_exposure = exposure_rect.w * 1.03
+
     num_exposures = max(int(interval_rect.w / padded_exposure), 1)
 
     # Update period rectangle width based on num_exposures
