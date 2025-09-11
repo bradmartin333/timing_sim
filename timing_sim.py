@@ -35,11 +35,12 @@ from pyray import (
     BLUE,
     PURPLE,
     GRAY,
+    LIGHTGRAY,
     BLACK,
 )
 
 # Constants
-WINDOW_SIZE = Vector2(800, 440)
+WINDOW_SIZE = Vector2(800, 490)
 EDGE_THRESHOLD = 10
 TEXT_SIZE = 10
 TEXT_PADDING = 4
@@ -159,6 +160,58 @@ class DraggableRectangle:
         draw_text(self.name, int(text_x), int(text_y), TEXT_SIZE, WHITE)
 
 
+@dataclass
+class WaveformCanvas:
+    x: float
+    y: float
+    width: float
+    height: float
+    color: Any = LIGHTGRAY
+
+    def draw(self, period: float, exposure: float, timer: float) -> None:
+        # Draw canvas background and border
+        draw_rectangle_rec(
+            Rectangle(self.x, self.y, self.width, self.height), self.color
+        )
+        draw_accurate_border(Rectangle(self.x, self.y, self.width, self.height))
+
+        # Calculate waveform segments
+        def clip(val, lo, hi):
+            return max(lo, min(val, hi))
+
+        low_time_1 = clip(period - exposure, 0, MIN_PERIOD)
+        high_time = exposure
+        low_time_2 = period - exposure - low_time_1
+
+        # Total time for one cycle
+        cycle_time = low_time_1 + high_time + low_time_2
+        if cycle_time <= 0:
+            return  # Nothing to draw
+
+        # Horizontal scaling to fit cycles in canvas
+        cycles = int(timer / cycle_time)
+        scale_x = self.width / timer if timer > 0 else 1.0
+
+        # Vertical positions
+        y_high = self.y + self.height * 0.25
+        y_low = self.y + self.height * 0.75
+
+        # Draw square wave
+        t = 0.0
+        for i in range(cycles):
+            x_start = self.x + t * scale_x
+            x0 = x_start
+            x1 = x0 + low_time_1 * scale_x
+            draw_line_v(Vector2(x0, y_low), Vector2(x1, y_low), BLACK)
+            x2 = x1 + high_time * scale_x
+            draw_line_v(Vector2(x1, y_low), Vector2(x1, y_high), GREEN)
+            draw_line_v(Vector2(x1, y_high), Vector2(x2, y_high), BLACK)
+            x3 = x2 + low_time_2 * scale_x
+            draw_line_v(Vector2(x2, y_high), Vector2(x2, y_low), RED)
+            draw_line_v(Vector2(x2, y_low), Vector2(x3, y_low), BLACK)
+            t += period
+
+
 # Initialize rectangles
 timer_rect = DraggableRectangle("TIMER", 10.0, 10.0, 780.0, 100.0, RED)
 interval_rect = DraggableRectangle("INTERVAL", 10.0, 110.0, 300.0, 100.0, GREEN)
@@ -174,7 +227,7 @@ exposure_rect = DraggableRectangle(
 period_rect = DraggableRectangle(
     "PERIOD", 10.0, 330.0, 120.0, 100.0, PURPLE, editable=False
 )
-
+canvas = WaveformCanvas(10.0, 430.0, 780.0, 50.0)
 
 def draw_repeated_rectangle(rect: DraggableRectangle, x: float) -> None:
     """Draw a rectangle at the specified x position with border."""
@@ -269,6 +322,7 @@ while not window_should_close():
     interval_rect.draw()
     exposure_rect.draw()
     period_rect.draw()
+    canvas.draw(period_rect.w, exposure_rect.w, timer_rect.w)
 
     # Calculate sensor idle time
     idle_time = period_rect.w - exposure_rect.w
